@@ -1,14 +1,20 @@
-// ====== NodeMCU (ESP8266) Ultrasonik -> MySQL via PHP ======
+// ====== NodeMCU (ESP8266) Ultrasonik -> MySQL via PHP (Multi-Device, logic asli dipertahankan) ======
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 
 /// ----------- WIFI CONFIG -----------
-const char* WIFI_SSID = "--";
-const char* WIFI_PASS = "---";
+const char* WIFI_SSID = "bb";
+const char* WIFI_PASS = "12345678";
 
 /// ----------- SERVER CONFIG -----------
-/// Ganti IP/LAN kamu, contoh: "http://192.168.1.10/parking/insert.php"
-const char* SERVER_INSERT_URL = "http://----/parking/insert.php";
+/// contoh: "http://192.168.1.10/parking/insert.php"
+const char* SERVER_INSERT_URL = "http://10.145.32.181/parking/insert.php";
+const char* SERVER_TV_STATUS  = "http://10.145.32.181/parking/tv_status.php";  // <-- jadikan variabel
+
+/// ----------- IDENTITAS PERANGKAT (bedakan di masing-masing ESP) -----------
+/// Unit 1: jarak1 + tokensecret1 | Unit 2: jarak2 + tokensecret2
+const char* DEVICE       = "jarak1";        // ganti "jarak2" untuk ESP kedua
+const char* DEVICE_TOKEN = "tokensecret1";  // sesuaikan dengan insert.php di server
 
 /// ----------- PINOUT -----------
 const int PIN_TRIG   = D1;
@@ -17,7 +23,8 @@ const int LED1       = D6;
 const int LED2       = D7;
 const int LED3       = D8;
 const int BUZZER     = D5;  // aktif HIGH
-const int PIN_TV = D4;   // kontrol LED/relay TV
+const int PIN_TV     = D4;  // kontrol LED/relay TV
+
 unsigned long lastCheckTV = 0;
 const unsigned long checkTVInterval = 5000; // cek tiap 5 detik
 
@@ -31,7 +38,7 @@ unsigned long buzzerIntervalMs = 0; // 0 = off
 
 // ---------- UTIL ----------
 float readDistanceCM() {
-  // trigger 10us
+  // trigger 10us (LOGIC ASLI)
   digitalWrite(PIN_TRIG, LOW); delayMicroseconds(2);
   digitalWrite(PIN_TRIG, HIGH); delayMicroseconds(10);
   digitalWrite(PIN_TRIG, LOW);
@@ -43,6 +50,7 @@ float readDistanceCM() {
 }
 
 String getStatusFromDistance(float d) {
+  // LOGIC ASLI
   if (d >= 0 && d <= 10.0)    return "PENUH";    // 3 LED
   if (d >= 15.0 && d <= 20.0) return "WASPADA";  // 2 LED
   if (d > 20.0)               return "KOSONG";   // 1 LED
@@ -50,7 +58,7 @@ String getStatusFromDistance(float d) {
 }
 
 void setIndicators(float d) {
-  // reset dulu
+  // LOGIC ASLI
   digitalWrite(LED1, LOW);
   digitalWrite(LED2, LOW);
   digitalWrite(LED3, LOW);
@@ -77,6 +85,7 @@ void setIndicators(float d) {
 }
 
 void handleBuzzer() {
+  // LOGIC ASLI
   if (buzzerIntervalMs == 0) {
     digitalWrite(BUZZER, LOW);
     buzzerState = false;
@@ -91,13 +100,17 @@ void handleBuzzer() {
 }
 
 void sendToServer(float distance, const String& status) {
+  // DITAMBAHKAN: kirim device + token (logic TETAP sama)
   if (WiFi.status() != WL_CONNECTED || strlen(SERVER_INSERT_URL) == 0) return;
 
   WiFiClient client;
   HTTPClient http;
   if (http.begin(client, SERVER_INSERT_URL)) {
     http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-    String body = "status=" + status + "&jarak=" + String(distance, 2);
+    String body = "device=" + String(DEVICE) +
+                  "&token="  + String(DEVICE_TOKEN) +
+                  "&status=" + status +
+                  "&jarak="  + String(distance, 2);
     int code = http.POST(body);
     // Serial.printf("POST -> %d\n", code);
     http.end();
@@ -105,10 +118,11 @@ void sendToServer(float distance, const String& status) {
 }
 
 void checkTVStatus() {
-  if (WiFi.status() != WL_CONNECTED) return;
+  // DITAMBAHKAN: pakai SERVER_TV_STATUS (variabel)
+  if (WiFi.status() != WL_CONNECTED || strlen(SERVER_TV_STATUS)==0) return;
   WiFiClient client;
   HTTPClient http;
-  if (http.begin(client, "http://10.145.32.181/parking/tv_status.php")) {
+  if (http.begin(client, SERVER_TV_STATUS)) {
     int code = http.GET();
     if (code == 200) {
       String payload = http.getString();
@@ -122,7 +136,6 @@ void checkTVStatus() {
   }
 }
 
-
 void setup() {
   Serial.begin(115200);
 
@@ -134,8 +147,9 @@ void setup() {
   pinMode(LED3, OUTPUT);
   pinMode(BUZZER, OUTPUT);
   digitalWrite(BUZZER, LOW);
+
   pinMode(PIN_TV, OUTPUT);
-digitalWrite(PIN_TV, LOW);
+  digitalWrite(PIN_TV, LOW);
 
   // WiFi (boleh dilewati jika tak kirim data)
   WiFi.mode(WIFI_STA);
@@ -156,10 +170,11 @@ digitalWrite(PIN_TV, LOW);
 
 void loop() {
   float d = readDistanceCM();
+
   if (millis() - lastCheckTV >= checkTVInterval) {
-  lastCheckTV = millis();
-  checkTVStatus();
-}
+    lastCheckTV = millis();
+    checkTVStatus();
+  }
 
   if (d > 0 && d < 400) {
     setIndicators(d);
@@ -171,7 +186,7 @@ void loop() {
     unsigned long now = millis();
     if (status != "TIDAK_VALID" && (now - lastSendMs >= sendIntervalMs)) {
       lastSendMs = now;
-      Serial.printf("Distance: %.2f cm, Status: %s\n", d, status.c_str());
+      Serial.printf("[%s] Distance: %.2f cm, Status: %s\n", DEVICE, d, status.c_str());
       sendToServer(d, status);
     }
   } else {

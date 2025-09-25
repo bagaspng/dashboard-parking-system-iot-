@@ -1,4 +1,10 @@
-<?php /* /parking/index.php */ ?>
+<?php
+require_once "auth.php";  // start session + RBAC helpers
+require_once "db.php";
+require_login();
+$role = user_role();
+$username = $_SESSION['user']['username'] ?? '';
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -7,103 +13,146 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { font-family: sans-serif; margin: 24px; }
+    header { display:flex; justify-content: space-between; align-items:center; margin-bottom: 12px; }
+    .muted { color:#777; font-size: 12px; }
     .card { border: 1px solid #ddd; border-radius: 12px; padding:16px; margin-bottom: 16px; }
     .status-pill { display:inline-block; padding:6px 12px; border-radius:999px; color:#fff; font-weight:600; }
     .pill-penuh{ background:#e02424; }
     .pill-waspada{ background:#f59e0b; }
     .pill-kosong{ background:#10b981; }
-    canvas { max-width: 100%; height: 380px; }
-    .muted { color:#777; font-size: 12px; }
+    canvas { max-width: 100%; height: 360px; }
+    button { padding:10px 16px; font-size:14px; border-radius:8px; border:1px solid #ccc; background:#fff; cursor:pointer; }
+    button:hover { background:#f6f6f6; }
   </style>
 </head>
 <body>
-  <h2>📊 Parking Ultrasonic Dashboard</h2>
+  <header>
+    <div>
+      <h2>📊 Parking Ultrasonic Dashboard</h2>
+      <div class="muted">Login sebagai: <b><?=htmlspecialchars($username)?></b> (<?=htmlspecialchars($role)?>)</div>
+    </div>
+    <div><a href="logout.php">Logout</a></div>
+  </header>
 
+  <?php if ($role==='superadmin' || $role==='admin_jarak1'): ?>
   <div class="card">
-    <div id="last-status">Memuat status terbaru...</div>
+    <h3>Status Terbaru — <code>jarak1</code></h3>
+    <div id="last-status-jarak1" class="muted">Memuat...</div>
     <div class="muted">Auto-refresh tiap 3 detik</div>
   </div>
 
   <div class="card">
-  <h3>Kontrol TV</h3>
-  <form action="tv.php" method="post">
-    <button type="submit" style="padding:10px 20px;font-size:16px;">
-      Toggle TV ON/OFF
-    </button>
-  </form>
-</div>
+    <h3>Grafik Jarak (cm) — jarak1</h3>
+    <canvas id="chart-jarak1"></canvas>
+  </div>
+  <?php endif; ?>
 
+  <?php if ($role==='superadmin' || $role==='admin_jarak2'): ?>
+  <div class="card">
+    <h3>Status Terbaru — <code>jarak2</code></h3>
+    <div id="last-status-jarak2" class="muted">Memuat...</div>
+    <div class="muted">Auto-refresh tiap 3 detik</div>
+  </div>
 
   <div class="card">
-    <h3>Grafik Jarak (cm)</h3>
-    <canvas id="chart"></canvas>
+    <h3>Grafik Jarak (cm) — jarak2</h3>
+    <canvas id="chart-jarak2"></canvas>
   </div>
+  <?php endif; ?>
+
+  <?php if ($role==='superadmin'): ?>
+  <div class="card">
+    <h3>Kontrol TV</h3>
+    <form action="tv_toggle.php" method="post" style="margin-bottom:8px;">
+      <button type="submit">Toggle TV ON/OFF</button>
+    </form>
+    <div id="tvStat" class="muted">Status TV: memuat...</div>
+  </div>
+  <?php endif; ?>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-const elLast = document.getElementById('last-status');
-const ctx = document.getElementById('chart').getContext('2d');
-
-const chart = new Chart(ctx, {
-  type: 'line',
-  data: {
-    labels: [],
-    datasets: [{
-      label: 'Jarak (cm)',
-      data: [],
-      tension: 0.25,
-      borderWidth: 2,
-      pointRadius: 2
-    }]
-  },
-  options: {
-    animation: false,
-    scales: {
-      x: { title: { display: true, text: 'Waktu' } },
-      y: { beginAtZero: true, title: { display: true, text: 'cm' } }
-    },
-    plugins: {
-      legend: { display: true }
-    }
-  }
-});
-
 function pill(status) {
-  const s = status.toUpperCase();
-  if (s === 'COlUSSION') return '<span class="status-pill pill-penuh">PENUH (<=10cm)</span>';
-  if (s === 'WASPADA') return '<span class="status-pill pill-waspada">WASPADA (15–20cm)</span>';
-  return '<span class="status-pill pill-kosong">KOSONG (>20cm)</span>';
+  const s = (status || '').toUpperCase();
+  if (s === 'PENUH')   return '<span class="status-pill pill-penuh">PENUH (≤10 cm)</span>';
+  if (s === 'WASPADA') return '<span class="status-pill pill-waspada">WASPADA (15–20 cm)</span>';
+  return '<span class="status-pill pill-kosong">KOSONG (>20 cm)</span>';
 }
 
-async function refresh() {
-  try {
-    const r = await fetch('data.php?limit=50', { cache: 'no-store' });
-    const data = await r.json();
+function makeChart(canvasId) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  return new Chart(ctx, {
+    type: 'line',
+    data: { labels: [], datasets: [{ label: 'Jarak (cm)', data: [], tension: 0.25, borderWidth: 2, pointRadius: 2 }] },
+    options: {
+      animation: false,
+      scales: {
+        x: { title: { display: true, text: 'Waktu' } },
+        y: { beginAtZero: true, title: { display: true, text: 'cm' } }
+      },
+      plugins: { legend: { display: true } }
+    }
+  });
+}
 
+async function fetchData(device, limit=50) {
+  const r = await fetch(`data.php?device=${device}&limit=${limit}`, { cache: 'no-store' });
+  if (!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+
+async function refreshOne(device, chart, lastElId) {
+  try {
+    const data = await fetchData(device, 50);
     const labels = data.map(d => new Date(d.waktu).toLocaleTimeString());
     const values = data.map(d => parseFloat(d.jarak));
-
     chart.data.labels = labels;
     chart.data.datasets[0].data = values;
     chart.update();
 
+    const lastEl = document.getElementById(lastElId);
     if (data.length) {
       const last = data[data.length - 1];
-      elLast.innerHTML = `
-        Status terbaru: ${pill(last.status)} &nbsp; | &nbsp;
+      lastEl.innerHTML = `
+        Status: ${pill(last.status)} &nbsp; | &nbsp;
         Jarak: <b>${parseFloat(last.jarak).toFixed(2)} cm</b> &nbsp; | &nbsp;
         Waktu: <b>${new Date(last.waktu).toLocaleString()}</b>
       `;
     } else {
-      elLast.textContent = 'Belum ada data.';
+      lastEl.textContent = 'Belum ada data.';
     }
   } catch (e) {
-    elLast.textContent = 'Gagal memuat data.';
+    const lastEl = document.getElementById(lastElId);
+    if (lastEl) lastEl.textContent = 'Gagal memuat data.';
+    console.error(e);
   }
 }
 
-refresh();
-setInterval(refresh, 3000);
+<?php if ($role==='superadmin' || $role==='admin_jarak1'): ?>
+const chart1 = makeChart('chart-jarak1');
+refreshOne('jarak1', chart1, 'last-status-jarak1');
+setInterval(() => refreshOne('jarak1', chart1, 'last-status-jarak1'), 3000);
+<?php endif; ?>
+
+<?php if ($role==='superadmin' || $role==='admin_jarak2'): ?>
+const chart2 = makeChart('chart-jarak2');
+refreshOne('jarak2', chart2, 'last-status-jarak2');
+setInterval(() => refreshOne('jarak2', chart2, 'last-status-jarak2'), 3000);
+<?php endif; ?>
+
+<?php if ($role==='superadmin'): ?>
+async function refreshTV(){
+  try{
+    const r = await fetch('tv_status.php', { cache: 'no-store' });
+    const j = await r.json();
+    document.getElementById('tvStat').textContent = 'Status TV: ' + (j?.status || '-');
+  }catch(e){
+    document.getElementById('tvStat').textContent = 'Status TV: gagal memuat';
+  }
+}
+refreshTV();
+setInterval(refreshTV, 5000);
+<?php endif; ?>
 </script>
 </body>
 </html>
