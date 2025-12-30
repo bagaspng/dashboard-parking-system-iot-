@@ -320,55 +320,9 @@ crontab -e
 0 2 * * * mysqldump parking_system > backup_$(date +\%Y\%m\%d).sql
 ```
 
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. **Fork** the repository
-2. **Create feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Commit changes** (`git commit -m 'Add amazing feature'`)
-4. **Push to branch** (`git push origin feature/amazing-feature`)
-5. **Open Pull Request**
-
-### 📋 **Development Guidelines**
-
-```bash
-# Code style untuk PHP (PSR-12)
-composer require --dev squizlabs/php_codesniffer
-./vendor/bin/phpcs --standard=PSR12 web/
-
-# C++ coding standards
-clang-format -i firmware/*. ino
-```
-
-## 📄 License
-
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
 ## 👨‍💻 Author
 
 **Bagas Pangestu** ([@bagaspng](https://github.com/bagaspng))
-
-- 📧 Email: bagaspangestu0407@gmail.com
-- 💼 LinkedIn: [Bagas Pangestu](https://linkedin.com/in/bagaspng)
-- 🌐 Portfolio: [bagaspng.dev](https://bagaspng.dev)
-
-## 🙏 Acknowledgments
-
-- **Arduino Community** - Untuk library dan dokumentasi sensor
-- **PHP Community** - Framework dan best practices
-- **IoT Makers** - Inspirasi dan referensi project
-- **Open Source Contributors** - Third-party libraries
-
-## 📞 Support
-
-Butuh bantuan? 
-
-- 📖 **Documentation**:  [Wiki](https://github.com/bagaspng/dashboard-parking-system-iot-/wiki)
-- 🐛 **Bug Reports**: [Issues](https://github.com/bagaspng/dashboard-parking-system-iot-/issues)
-- 💬 **Discussions**: [Discussions](https://github.com/bagaspng/dashboard-parking-system-iot-/discussions)
-- 📧 **Email**: bagaspangestu0407@gmail.com
 
 ---
 
