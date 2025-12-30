@@ -2,10 +2,10 @@
 
 > Sistem dashboard monitoring dan manajemen parkir berbasis IoT dengan teknologi sensor real-time
 
-[![PHP](https://img.shields.io/badge/PHP-70. 1%25-777BB4?style=flat-square&logo=php&logoColor=white)](https://github.com/bagaspng/dashboard-parking-system-iot-)
+[![PHP](https://img.shields.io/badge/PHP-70.1%25-777BB4?style=flat-square&logo=php&logoColor=white)](https://github.com/bagaspng/dashboard-parking-system-iot-)
 [![C++](https://img.shields.io/badge/C++-29.9%25-00599C?style=flat-square&logo=c%2B%2B&logoColor=white)](https://github.com/bagaspng/dashboard-parking-system-iot-)
 [![IoT](https://img.shields.io/badge/IoT-Enabled-success?style=flat-square&logo=internetofthings&logoColor=white)](https://github.com/bagaspng/dashboard-parking-system-iot-)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg? style=flat-square)](LICENSE)
+
 
 ## 📋 Deskripsi
 
@@ -60,7 +60,7 @@ Dashboard Parking System IoT adalah solusi pintar untuk monitoring dan manajemen
 | **Backend** | ![PHP](https://img.shields.io/badge/PHP-777BB4?style=flat-square&logo=php&logoColor=white) | 70.1% | Web server, API, database management |
 | **IoT Firmware** | ![C++](https://img.shields.io/badge/C++-00599C?style=flat-square&logo=c%2B%2B&logoColor=white) | 29.9% | Microcontroller programming, sensor control |
 | **Database** | ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white) | - | Data storage dan management |
-| **Frontend** | ![HTML5](https://img.shields.io/badge/HTML5-E34F26? style=flat-square&logo=html5&logoColor=white) ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white) ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black) | - | Dashboard interface |
+| **Frontend** | ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat-square&logo=html5&logoColor=white) ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white) ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black) | - | Dashboard interface |
 
 ## 🔧 Hardware Requirements
 
