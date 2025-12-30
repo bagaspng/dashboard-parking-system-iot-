@@ -45,7 +45,7 @@ Dashboard Parking System IoT adalah solusi pintar untuk monitoring dan manajemen
 │   IR, Camera)   │    │                  │    │                 │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
          │                        │                        │
-         └── Detect Vehicle ──────┼── Send Data ──────────┤
+         └── Detect Vehicle ──────┼── Send Data ───────────┤
                                   │                        │
                             ┌──────────────────┐    ┌─────────────────┐
                             │    Database      │────│   Dashboard     │
@@ -82,8 +82,6 @@ Dashboard Parking System IoT adalah solusi pintar untuk monitoring dan manajemen
   - curl
   - json
 - **MySQL** 5.7+
-- **Min RAM** 2GB
-- **Storage** 10GB+
 
 ## 📦 Instalasi
 
